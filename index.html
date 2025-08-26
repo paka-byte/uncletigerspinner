@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>FPL Tiger Lucky Draw</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <!-- ลบ canvas-confetti ออก -->
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: #f6d2b8;
+      color: #000;
+      text-align: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+    h1 { margin-bottom: 20px; font-size: 28px; }
+    input, button {
+      padding: 10px 15px;
+      font-size: 1rem;
+      margin: 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #spinBtn {
+      background: linear-gradient(135deg,#ff914d,#ffb84d);
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    #spinBtn:hover { opacity: 0.9; }
+
+    .container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      margin-top: 20px;
+    }
+    .wheel-wrap {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+      background: #fff;
+    }
+    .hide { display: none; }
+
+    #logo img { width: 200px; cursor: pointer; }
+    .spin { animation: spin 2s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+
+    /* รายชื่อ */
+    #nameList {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .name-tag {
+      background: #ffe5c2;
+      border: 1px solid #ff914d;
+      border-radius: 18px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .remove-btn {
+      background: none;
+      color: #c0392b;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.2s;
+    }
+    .remove-btn:hover { color: #e74c3c; }
+
+    /* เสือเล็ก 7 ตัว */
+    .mini-tiger {
+      position: absolute;
+      width: 60px;
+      border-radius: 50%;
+      animation-name: spin;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+      opacity: 0.85;
+    }
+    .t1 { top: -40px; left: 50%; transform: translateX(-50%); }
+    .t2 { bottom: -40px; left: 20%; }
+    .t3 { bottom: -40px; right: 20%; }
+    .t4 { top: 20%; left: -30px; }
+    .t5 { top: 20%; right: -30px; }
+    .t6 { bottom: 20%; left: -30px; }
+    .t7 { bottom: 20%; right: -30px; }
+
+    /* Popup */
+    #winnerPopup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.25);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    #winnerPopup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .popup-card {
+      background: #f6d2b8;
+      border: 2px solid #000;
+      border-radius: 20px;
+      padding: 30px 40px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      transform: scale(0.85);
+      animation: fadeIn 0.5s ease forwards;
+    }
+    .popup-card h2 { margin: 0 0 15px; font-size: 28px; }
+    .popup-card p { font-size: 20px; margin: 0 0 20px; }
+    .popup-card button {
+      background: linear-gradient(135deg,#ff914d,#ffb84d);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* Placeholder */
+    .placeholder {
+      background: #ffe5c2;
+      border: 2px dashed #ff914d;
+      padding: 16px 24px;
+      border-radius: 16px;
+      font-size: 18px;
+      color: #333;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .placeholder img {
+      width: 40px;
+      height: 40px;
+      animation: bounce 1.2s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎁 Lucky Draw — FPL Tiger</h1>
+
+  <input type="file" id="fileInput" accept=".csv,.xlsx"><br>
+  <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?"><br>
+  <input type="text" id="nameInput" placeholder="พิมพ์ชื่อแล้วกด Space หรือ Enter เพื่อเพิ่ม"><br>
+
+  <button id="spinBtn">🐯 กดเสือเพื่อปั่น!</button>
+
+  <div class="container">
+    <div class="wheel-wrap">
+      <canvas id="wheelCanvas" width="400" height="400" class="hide"></canvas>
+      <div id="placeholder" class="placeholder">
+        <img src="images/logo.png" alt="Tiger Icon">
+        <span>กรุณาเพิ่มรายชื่อก่อนปั่น!</span>
+      </div>
+    </div>
+    <div id="logo">
+      <img src="images/logo.png" alt="FPL Tiger" id="tigerLogo">
+    </div>
+
+    <!-- เสือเล็ก 7 ตัว -->
+    <img src="images/logo.png" class="mini-tiger t1" alt="">
+    <img src="images/logo.png" class="mini-tiger t2" alt="">
+    <img src="images/logo.png" class="mini-tiger t3" alt="">
+    <img src="images/logo.png" class="mini-tiger t4" alt="">
+    <img src="images/logo.png" class="mini-tiger t5" alt="">
+    <img src="images/logo.png" class="mini-tiger t6" alt="">
+    <img src="images/logo.png" class="mini-tiger t7" alt="">
+  </div>
+
+  <div id="nameList"></div>
+
+  <!-- Popup -->
+  <div id="winnerPopup">
+    <div class="popup-card">
+      <h2>🎉 ยินดีด้วย! 🎉</h2>
+      <p id="winnerText"></p>
+      <button onclick="closePopup()">ปิด</button>
+    </div>
+  </div>
+
+  <audio id="spinSound" src="sounds/spin.mp3"></audio>
+  <audio id="winSound" src="sounds/win.mp3"></audio>
+
+<script>
+let names = [];
+let startAngle = 0;
+let arc = 0;
+let isSpinning = false;
+let spinDuration = 8000; // 8 วิ
+let startTime;
+
+const canvas = document.getElementById("wheelCanvas");
+const ctx = canvas.getContext("2d");
+const nameList = document.getElementById("nameList");
+const placeholder = document.getElementById("placeholder");
+
+// 🎯 สุ่มความเร็วหมุนให้เสือเล็ก
+document.querySelectorAll(".mini-tiger").forEach(tiger => {
+  let speed = (Math.random() * 6 + 4).toFixed(1); // 4s - 10s
+  tiger.style.animationDuration = `${speed}s`;
+});
+
+function renderNameList(){
+  nameList.innerHTML = "";
+  names.forEach((n,i)=>{
+    let tag = document.createElement("div");
+    tag.className="name-tag";
+    tag.innerHTML = `${n} <button class="remove-btn" data-index="${i}">✖</button>`;
+    nameList.appendChild(tag);
+  });
+  document.querySelectorAll(".remove-btn").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      let idx = e.target.getAttribute("data-index");
+      names.splice(idx,1);
+      arc = names.length>0 ? Math.PI*2/names.length : 0;
+      drawRouletteWheel();
+      renderNameList();
+    });
+  });
+  if(names.length === 0){
+    placeholder.style.display = "flex";
+    canvas.classList.add("hide");
+  } else {
+    placeholder.style.display = "none";
+    canvas.classList.remove("hide");
+  }
+}
+
+function drawRouletteWheel() {
+  let outsideRadius = 180;
+  let textRadius = 140;
+  let insideRadius = 50;
+
+  ctx.clearRect(0,0,400,400);
+  if(names.length === 0) return;
+
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.font = "16px Segoe UI";
+
+  for(let i = 0; i < names.length; i++) {
+    let angle = startAngle + i * arc;
+    ctx.fillStyle = i % 2 === 0 ? "#ffcc80" : "#ffb74d";
+
+    ctx.beginPath();
+    ctx.arc(200, 200, outsideRadius, angle, angle + arc, false);
+    ctx.arc(200, 200, insideRadius, angle + arc, angle, true);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.fillStyle = "#000";
+    ctx.translate(200 + Math.cos(angle + arc / 2) * textRadius,
+                  200 + Math.sin(angle + arc / 2) * textRadius);
+    ctx.rotate(angle + arc / 2);
+    let text = names[i];
+    ctx.fillText(text, -ctx.measureText(text).width/2, 0);
+    ctx.restore();
+  }
+
+  // icon เสือตรงกลาง
+  let img = new Image();
+  img.src = "images/logo.png";
+  img.onload = () => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(200,200,insideRadius,0,Math.PI*2); 
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(img,170,170,60,60);
+    ctx.restore();
+  };
+
+  // marker ด้านบน
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.moveTo(190,20);
+  ctx.lineTo(210,20);
+  ctx.lineTo(200,40);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function rotateWheel(timestamp) {
+  if (!startTime) startTime = timestamp;
+  let elapsed = timestamp - startTime;
+  let progress = elapsed / spinDuration;
+  let easeOut = Math.pow(1 - progress, 3);
+
+  let spinAngleDelta = easeOut * 20; 
+  startAngle += (spinAngleDelta * Math.PI / 180);
+  drawRouletteWheel();
+
+  if(elapsed < spinDuration) {
+    requestAnimationFrame(rotateWheel);
+  } else {
+    stopRotateWheel();
+  }
+}
+
+function stopRotateWheel() {
+  isSpinning = false;
+
+  let degrees = startAngle * 180 / Math.PI + 90;
+  let arcd = arc * 180 / Math.PI;
+  let index = Math.floor((360 - degrees % 360) / arcd) % names.length;
+  let winner = names[index];
+
+  document.getElementById("spinSound").pause();
+  document.getElementById("winSound").play();
+  document.getElementById("tigerLogo").classList.remove("spin");
+
+  // 🔕 ตัด Confetti ออกแล้ว
+
+  let prize = document.getElementById("prizeInput").value;
+  document.getElementById("winnerText").innerHTML =
+    `คุณ <b>${winner}</b> ได้รับรางวัล <b>${prize}</b> 🏆`;
+
+  document.getElementById("winnerPopup").classList.add("show");
+}
+
+function closePopup(){
+  document.getElementById("winnerPopup").classList.remove("show");
+}
+
+document.getElementById("spinBtn").addEventListener("click", startSpin);
+document.getElementById("tigerLogo").addEventListener("click", startSpin);
+
+function startSpin(){
+  if(isSpinning || names.length === 0) return;
+  isSpinning = true;
+  startTime = null;
+  document.getElementById("spinSound").play();
+  document.getElementById("tigerLogo").classList.add("spin");
+  requestAnimationFrame(rotateWheel);
+}
+
+// เพิ่มชื่อด้วย Spacebar + Enter
+document.getElementById("nameInput").addEventListener("keydown", function(e){
+  if(e.code === "Space" || e.code === "Enter") {
+    e.preventDefault();
+    let val = this.value.trim();
+    if(val) {
+      names.push(val);
+      arc = Math.PI * 2 / names.length;
+      drawRouletteWheel();
+      renderNameList();
+      this.value = "";
+    }
+  }
+});
+
+// อัปโหลดไฟล์ CSV
+document.getElementById("fileInput").addEventListener("change", function(e){
+  Papa.parse(e.target.files[0], {
+    complete: function(results) {
+      names = results.data.flat().filter(n => n.trim() !== "");
+      arc = names.length>0 ? Math.PI * 2 / names.length : 0;
+      drawRouletteWheel();
+      renderNameList();
+    }
+  });
+});
+
+drawRouletteWheel();
+renderNameList();
+</script>
+</body>
+</html>
