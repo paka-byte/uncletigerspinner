@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>FPL Tiger Lucky Draw</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <!-- ลบ canvas-confetti ออก -->
+  <!-- ไม่มี confetti -->
   <style>
     body {
       font-family: "Segoe UI", Tahoma, sans-serif;
@@ -87,23 +87,20 @@
     }
     .remove-btn:hover { color: #e74c3c; }
 
-    /* เสือเล็ก 7 ตัว */
+    /* เสือเล็ก: วิ่งทั่วจอ + หมุนเรื่อยๆ (ไม่บังการคลิก) */
     .mini-tiger {
-      position: absolute;
+      position: fixed;          /* ทั่วจอ */
       width: 60px;
       border-radius: 50%;
-      animation-name: spin;
+      animation-name: spin;     /* หมุนตลอด */
       animation-iteration-count: infinite;
       animation-timing-function: linear;
       opacity: 0.85;
+      pointer-events: none;     /* ไม่ขวางคลิก */
+      will-change: left, top;   /* ช่วยให้ลื่น */
+      z-index: 0;               /* อยู่ชั้นล่าง */
     }
-    .t1 { top: -40px; left: 50%; transform: translateX(-50%); }
-    .t2 { bottom: -40px; left: 20%; }
-    .t3 { bottom: -40px; right: 20%; }
-    .t4 { top: 20%; left: -30px; }
-    .t5 { top: 20%; right: -30px; }
-    .t6 { bottom: 20%; left: -30px; }
-    .t7 { bottom: 20%; right: -30px; }
+    /* คลาส t1..t7 เดิม ไม่ใช้งาน แต่คงไว้ได้ */
 
     /* Popup */
     #winnerPopup {
@@ -232,11 +229,80 @@ const ctx = canvas.getContext("2d");
 const nameList = document.getElementById("nameList");
 const placeholder = document.getElementById("placeholder");
 
-// 🎯 สุ่มความเร็วหมุนให้เสือเล็ก
+// ============ เสือเล็ก: ตั้งค่าสปินความเร็วสุ่ม + เคลื่อนที่ทั่วจอ ============
+
+// สุ่มความเร็วหมุนให้เสือเล็ก (4–10 วินาทีต่อรอบ)
 document.querySelectorAll(".mini-tiger").forEach(tiger => {
-  let speed = (Math.random() * 6 + 4).toFixed(1); // 4s - 10s
+  const speed = (Math.random() * 6 + 4).toFixed(1);
   tiger.style.animationDuration = `${speed}s`;
 });
+
+// เคลื่อนที่ด้วย requestAnimationFrame (สุ่มทิศ + เด้งขอบ)
+const tigers = Array.from(document.querySelectorAll(".mini-tiger"));
+
+// ปรับได้: ความเร็วพื้นฐาน (px/วินาที)
+const BASE_SPEED_MIN = 40;
+const BASE_SPEED_MAX = 100;
+
+function randRange(min, max) { return Math.random() * (max - min) + min; }
+
+// ตำแหน่งและความเร็วเริ่มต้น
+const tigerState = tigers.map(t => {
+  const w = 60, h = 60; // ขนาดคร่าวๆ (ควรเท่าจริงของรูป)
+  const x = randRange(0, Math.max(0, window.innerWidth  - w));
+  const y = randRange(0, Math.max(0, window.innerHeight - h));
+  const angle = randRange(0, Math.PI * 2);
+  const speed = randRange(BASE_SPEED_MIN, BASE_SPEED_MAX); // px/s
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
+  t.style.left = x + "px";
+  t.style.top  = y + "px";
+  return { el: t, x, y, vx, vy, w, h };
+});
+
+let lastTs = null;
+function animateTigers(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = (ts - lastTs) / 1000; // วินาที
+  lastTs = ts;
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  tigerState.forEach(s => {
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+
+    // เด้งขอบซ้าย/ขวา
+    if (s.x <= 0) { s.x = 0; s.vx = Math.abs(s.vx); }
+    if (s.x >= W - s.w) { s.x = W - s.w; s.vx = -Math.abs(s.vx); }
+
+    // เด้งขอบบน/ล่าง
+    if (s.y <= 0) { s.y = 0; s.vy = Math.abs(s.vy); }
+    if (s.y >= H - s.h) { s.y = H - s.h; s.vy = -Math.abs(s.vy); }
+
+    // อัปเดตตำแหน่ง
+    s.el.style.left = s.x + "px";
+    s.el.style.top  = s.y + "px";
+  });
+
+  requestAnimationFrame(animateTigers);
+}
+requestAnimationFrame(animateTigers);
+
+// เมื่อรีไซซ์หน้าจอ ให้ดันตำแหน่งให้อยู่ในขอบ
+window.addEventListener("resize", () => {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  tigerState.forEach(s => {
+    s.x = Math.min(Math.max(0, s.x), Math.max(0, W - s.w));
+    s.y = Math.min(Math.max(0, s.y), Math.max(0, H - s.h));
+    s.el.style.left = s.x + "px";
+    s.el.style.top  = s.y + "px";
+  });
+});
+
+// ========================= Lucky Wheel =========================
 
 function renderNameList(){
   nameList.innerHTML = "";
@@ -348,7 +414,7 @@ function stopRotateWheel() {
   document.getElementById("winSound").play();
   document.getElementById("tigerLogo").classList.remove("spin");
 
-  // 🔕 ตัด Confetti ออกแล้ว
+  // ไม่มี Confetti
 
   let prize = document.getElementById("prizeInput").value;
   document.getElementById("winnerText").innerHTML =
