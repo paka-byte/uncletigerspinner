@@ -24,14 +24,14 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    #spinBtn {
+    #spinBtn, #addNameBtn {
       background: linear-gradient(135deg,#ff914d,#ffb84d);
       color: #fff;
       font-weight: bold;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      position: relative; z-index: 2;  /* 📱 อยู่เหนือเสือเล็ก */
+      position: relative; z-index: 2;
     }
-    #spinBtn:hover { opacity: 0.9; }
+    #spinBtn:hover, #addNameBtn:hover { opacity: 0.9; }
 
     .container {
       position: relative;
@@ -40,7 +40,7 @@
       align-items: center;
       gap: 40px;
       margin-top: 20px;
-      z-index: 2; /* 📱 อยู่เหนือเสือเล็ก */
+      z-index: 2;
     }
     .wheel-wrap {
       position: relative;
@@ -68,7 +68,7 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      position: relative; z-index: 2; /* 📱 คลิกได้ */
+      position: relative; z-index: 2;
     }
     .name-tag {
       background: #ffe5c2;
@@ -100,9 +100,9 @@
       animation-iteration-count: infinite;
       animation-timing-function: linear;
       opacity: 0.85;
-      pointer-events: none;     /* 📱 ไม่จับทัช */
+      pointer-events: none;
       will-change: left, top;
-      z-index: 1;               /* 📱 ใต้คอนเทนต์ */
+      z-index: 1;
     }
 
     /* Popup */
@@ -117,12 +117,9 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.4s ease;
-      z-index: 10; /* บนสุดตอนโชว์ */
+      z-index: 10;
     }
-    #winnerPopup.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    #winnerPopup.show { opacity: 1; pointer-events: auto; }
     .popup-card {
       background: #f6d2b8;
       border: 2px solid #000;
@@ -170,9 +167,18 @@
       height: 40px;
       animation: bounce 1.2s infinite;
     }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+
+    /* แถวกรอกชื่อ + ปุ่มส่ง ให้เรียงสวยบนมือถือ */
+    .name-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #nameInput {
+      min-width: 220px;
     }
   </style>
 </head>
@@ -181,7 +187,19 @@
 
   <input type="file" id="fileInput" accept=".csv,.xlsx"><br>
   <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?"><br>
-  <input type="text" id="nameInput" placeholder="พิมพ์ชื่อแล้วกด Space หรือ Enter เพื่อเพิ่ม"><br>
+
+  <div class="name-row">
+    <input
+      type="text"
+      id="nameInput"
+      placeholder="พิมพ์ชื่อผู้ร่วมลุ้น"
+      autocapitalize="words"
+      autocomplete="off"
+      spellcheck="false"
+      enterkeyhint="done"
+    >
+    <button id="addNameBtn">➕ ส่งชื่อ</button>
+  </div>
 
   <button id="spinBtn">🐯 กดเสือเพื่อปั่น!</button>
 
@@ -218,7 +236,6 @@
     </div>
   </div>
 
-  <!-- 📱 preload + ไม่บังทัช -->
   <audio id="spinSound" src="sounds/spin.mp3" preload="auto"></audio>
   <audio id="winSound"  src="sounds/win.mp3"  preload="auto"></audio>
 
@@ -419,7 +436,7 @@ function closePopup(){
 }
 
 // ---------- Mobile-friendly triggers ----------
-// ปลดล็อกเสียงบน iOS/Android ครั้งแรกที่แตะ
+// ปลดล็อกเสียงครั้งแรกที่แตะ
 function unlockAudio(){
   const spinS = document.getElementById("spinSound");
   const winS  = document.getElementById("winSound");
@@ -433,7 +450,7 @@ function unlockAudio(){
 document.addEventListener("touchstart", unlockAudio, { once:true });
 document.addEventListener("mousedown", unlockAudio, { once:true });
 
-// รองรับทั้ง click และ touchend
+// ยูทิลิตี้ bindTap: รองรับทั้ง click และ touchend
 function bindTap(el, handler){
   el.addEventListener("click", (e)=>{ e.preventDefault(); handler(); });
   el.addEventListener("touchend", (e)=>{ e.preventDefault(); handler(); }, { passive:false });
@@ -441,10 +458,14 @@ function bindTap(el, handler){
 bindTap(document.getElementById("spinBtn"), startSpin);
 bindTap(document.getElementById("tigerLogo"), startSpin);
 
+// ปุ่มส่งชื่อ (มือถือกดทีละชื่อ)
+bindTap(document.getElementById("addNameBtn"), () => {
+  addNameFromInput(document.getElementById("nameInput"));
+});
+
 function startSpin(){
   if(isSpinning || names.length === 0) {
     if(names.length === 0){
-      // แจ้งเบาๆบนมือถือ
       alert("กรุณาเพิ่มรายชื่อก่อนปั่นนะ!");
     }
     return;
@@ -455,24 +476,21 @@ function startSpin(){
   const spinS = document.getElementById("spinSound");
   try {
     spinS.currentTime = 0;
-    spinS.play().catch(()=>{ /* บนบางเครื่องอาจบล็อกเสียง แต่ให้หมุนต่อได้ */ });
+    spinS.play().catch(()=>{});
   } catch(e){}
 
   document.getElementById("tigerLogo").classList.add("spin");
   requestAnimationFrame(rotateWheel);
 }
 
-// เพิ่มชื่อด้วย Space/Enter (มือถือกด Enter ได้)
+// เพิ่มชื่อด้วย Space/Enter (เดิม) + ปุ่มส่ง (ใหม่)
 document.getElementById("nameInput").addEventListener("keydown", function(e){
   if(e.code === "Space" || e.code === "Enter") {
     e.preventDefault();
     addNameFromInput(this);
   }
 });
-// เผื่อบางคีย์บอร์ดมือถือไม่มี Enter จริง ๆ: แตะพื้นที่ว่างก็กดเพิ่มได้ด้วย dblclick
-document.getElementById("nameInput").addEventListener("dblclick", function(){
-  addNameFromInput(this);
-});
+
 function addNameFromInput(inputEl){
   let val = inputEl.value.trim();
   if(val) {
@@ -481,6 +499,9 @@ function addNameFromInput(inputEl){
     drawRouletteWheel();
     renderNameList();
     inputEl.value = "";
+
+    // ฟีดแบ็กสั้นๆบนมือถือ
+    if (navigator.vibrate) navigator.vibrate(10);
   }
 }
 
