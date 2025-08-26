@@ -1,207 +1,225 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>FPL Tiger Lucky Draw</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
-    body {
+    :root{
+      --gap: 12px;
+      --radius: 12px;
+      --shadow: 0 4px 10px rgba(0,0,0,0.15);
+      --btn-grad: linear-gradient(135deg,#ff914d,#ffb84d);
+      --text:#111;
+      --bg:#f6d2b8;
+      --chip:#ffe5c2;
+      --chip-border:#ff914d;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
       font-family: "Segoe UI", Tahoma, sans-serif;
-      background: #f6d2b8;
-      color: #000;
-      text-align: center;
-      padding: 20px;
-      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      margin:0;
+      padding:16px 16px calc(90px + env(safe-area-inset-bottom));
       -webkit-tap-highlight-color: transparent;
+      overflow-x:hidden;
     }
-    h1 { margin-bottom: 20px; font-size: 28px; }
-    input, button {
-      padding: 10px 15px;
-      font-size: 1rem;
-      margin: 8px;
+    h1{ margin: 0 0 12px; font-size: clamp(20px, 5vw, 28px); text-align:center; }
+
+    /* กล่องอินพุตบนมือถือ = คอลัมน์ */
+    .inputs{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
+      max-width: 720px;
+      margin: 0 auto 8px;
+    }
+    .row{
+      display:flex; gap: var(--gap);
+    }
+    .row > *{ flex:1 }
+    input, button{
+      width:100%;
+      padding: 12px 14px;
+      font-size: 16px;
       border: none;
-      border-radius: 8px;
-      cursor: pointer;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      background:#fff;
+      color:var(--text);
     }
-    /* ให้อยู่บนเสือเล็ก */
-    #nameInput, #addNameBtn, #fileInput, #prizeInput { position: relative; z-index: 2; }
+    input[type="file"]{ background:#fff; }
+    #addNameBtn{ white-space:nowrap; flex:0 0 auto; min-width: 120px; }
 
-    #spinBtn {
-      background: linear-gradient(135deg,#ff914d,#ffb84d);
-      color: #fff;
-      font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      position: relative; z-index: 2;
+    /* ล้อ + โลโก้ จัดคอลัมน์บนจอเล็ก */
+    .container{
+      max-width: 980px;
+      margin: 10px auto 0;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 16px;
+      position:relative;
+      z-index:2; /* เหนือเสือเล็ก */
     }
-    #spinBtn:hover { opacity: 0.9; }
-
-    .container {
+    .wheel-wrap{
       position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 40px;
-      margin-top: 20px;
-      z-index: 2; /* อยู่เหนือเสือเล็ก */
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1/1;   /* ทำให้เป็นสี่เหลี่ยมจัตุรัสเสมอ */
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
-    .wheel-wrap {
-      position: relative;
-      width: 400px;
-      height: 400px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    canvas {
+    canvas{
       border-radius: 50%;
       box-shadow: 0 6px 15px rgba(0,0,0,0.25);
       background: #fff;
+      width: 100%;
+      height: 100%;
     }
-    .hide { display: none; }
+    .hide{ display:none }
 
-    #logo img { width: 200px; cursor: pointer; position: relative; z-index: 2; }
-    .spin { animation: spin 2s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
-
-    /* รายชื่อ */
-    #nameList {
-      margin-top: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      position: relative; z-index: 2;
-    }
-    .name-tag {
-      background: #ffe5c2;
-      border: 1px solid #ff914d;
-      border-radius: 18px;
-      padding: 6px 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .remove-btn {
-      background: none;
-      color: #c0392b;
-      border: none;
-      font-size: 14px;
+    #logo img{
+      width: min(48vw, 200px);
       cursor: pointer;
-      padding: 0;
-      transition: color 0.2s;
+      display:block;
+      margin: 0 auto;
     }
-    .remove-btn:hover { color: #e74c3c; }
+    .spin{ animation: spin 2s linear infinite; }
+    @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
-    /* เสือเล็กทั่วจอ (ไม่บังการกด) */
-    .mini-tiger {
+    /* รายชื่อเลื่อนในกล่อง */
+    #nameList{
+      margin-top: 8px;
+      display:flex; flex-wrap:wrap; gap:8px;
+      justify-content:center;
+      max-width: 980px;
+      max-height: 28vh;
+      overflow:auto;
+      padding: 8px;
+    }
+    .name-tag{
+      background: var(--chip);
+      border: 1px solid var(--chip-border);
+      border-radius: 18px;
+      padding: 6px 12px;
+      display:flex; align-items:center; gap:6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .remove-btn{
+      background:none; color:#c0392b; border:none;
+      font-size:14px; cursor:pointer; padding:0 2px;
+    }
+
+    /* เสือเล็ก วิ่งทั่วจอ (ไม่บังทัช) */
+    .mini-tiger{
       position: fixed;
-      width: 60px;
+      width: 56px;
       border-radius: 50%;
-      animation-name: spin;
-      animation-iteration-count: infinite;
-      animation-timing-function: linear;
-      opacity: 0.85;
-      pointer-events: none;     /* ไม่จับทัช */
+      animation: spin 6s linear infinite;
+      opacity: .85;
+      pointer-events: none;
       will-change: left, top;
-      z-index: 1;               /* ใต้คอนเทนต์ */
+      z-index:1; /* ใต้คอนเทนต์ */
     }
 
     /* Popup */
-    #winnerPopup {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.25);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
-      z-index: 10; /* บนสุดตอนโชว์ */
+    #winnerPopup{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.25);
+      opacity:0; pointer-events:none;
+      transition: opacity .25s ease; z-index: 30;
+      padding: 16px;
     }
-    #winnerPopup.show {
-      opacity: 1;
-      pointer-events: auto;
+    #winnerPopup.show{ opacity:1; pointer-events:auto; }
+    .popup-card{
+      background: var(--bg);
+      border:2px solid #000;
+      border-radius: 16px;
+      padding: 22px 24px;
+      text-align:center;
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+      transform: scale(.92);
+      animation: pop .3s ease forwards;
+      max-width: 90vw;
     }
-    .popup-card {
-      background: #f6d2b8;
-      border: 2px solid #000;
-      border-radius: 20px;
-      padding: 30px 40px;
-      text-align: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-      transform: scale(0.85);
-      animation: fadeIn 0.5s ease forwards;
-    }
-    .popup-card h2 { margin: 0 0 15px; font-size: 28px; }
-    .popup-card p { font-size: 20px; margin: 0 0 20px; }
-    .popup-card button {
-      background: linear-gradient(135deg,#ff914d,#ffb84d);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.85); }
-      to   { opacity: 1; transform: scale(1); }
+    @keyframes pop{ to{ transform: scale(1) } }
+    .popup-card h2{ margin:0 0 10px; font-size: clamp(20px, 5vw, 28px); }
+    .popup-card p{ margin:0 0 14px; font-size: clamp(16px, 4.5vw, 20px); }
+    .popup-card button{
+      background: var(--btn-grad);
+      color:#fff; font-weight:700;
     }
 
     /* Placeholder */
-    .placeholder {
-      background: #ffe5c2;
-      border: 2px dashed #ff914d;
-      padding: 16px 24px;
-      border-radius: 16px;
-      font-size: 18px;
-      color: #333;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      position: relative; z-index: 2;
+    .placeholder{
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:8px; border-radius: 50%;
+      color:#333;
+      text-align:center;
     }
-    .placeholder img {
-      width: 40px;
-      height: 40px;
-      animation: bounce 1.2s infinite;
+    .placeholder img{ width: 44px; height: 44px; animation: bounce 1.2s infinite; }
+    @keyframes bounce{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    /* ปุ่มหมุนลอยติดขอบล่าง (นิ้วโป้งกดง่าย) */
+    .floating-spin{
+      position: fixed;
+      left: 50%;
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      width: min(640px, 92vw);
+      z-index: 25;
     }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+    #spinBtn{
+      background: var(--btn-grad);
+      color:#fff; font-weight:700;
+      padding: 14px 16px; font-size: clamp(16px, 5vw, 18px);
+      width:100%;
+      border-radius: 999px;
+      box-shadow: 0 8px 16px rgba(255,145,77,.35);
+    }
+    #spinBtn:active{ transform: scale(.98); }
+
+    /* จอใหญ่: จัดสองคอลัมน์ */
+    @media (min-width: 900px){
+      .container{ flex-direction: row; align-items: flex-start; gap: 28px; }
+      .right{ padding-top: 30px; }
+      .inputs{ grid-template-columns: 1fr 1fr; }
+      .row{ gap:8px }
     }
   </style>
 </head>
 <body>
   <h1>🎁 Lucky Draw — FPL Tiger</h1>
 
-  <input type="file" id="fileInput" accept=".csv,.xlsx"><br>
-  <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?"><br>
+  <!-- กลุ่มอินพุตบนสุด -->
+  <div class="inputs">
+    <input type="file" id="fileInput" accept=".csv,.xlsx" />
+    <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?" />
+    <div class="row">
+      <input type="text" id="nameInput" placeholder="พิมพ์ชื่อแล้วกด ➕ เพิ่มชื่อ หรือ Enter" />
+      <button id="addNameBtn" type="button" aria-label="เพิ่มชื่อ">➕ เพิ่มชื่อ</button>
+    </div>
+  </div>
 
-  <!-- ช่องชื่อ + ปุ่มเพิ่มชื่อ (มือถือกดได้ทีละชื่อ) -->
-  <input type="text" id="nameInput" placeholder="พิมพ์ชื่อแล้วกด ➕ หรือ Enter">
-  <button id="addNameBtn" type="button" aria-label="เพิ่มชื่อ">➕ เพิ่มชื่อ</button>
-  <br>
-
-  <button id="spinBtn">🐯 กดเสือเพื่อปั่น!🐯 </button>
-
+  <!-- ล้อ + โลโก้ -->
   <div class="container">
     <div class="wheel-wrap">
-      <canvas id="wheelCanvas" width="400" height="400" class="hide"></canvas>
+      <canvas id="wheelCanvas" class="hide"></canvas>
       <div id="placeholder" class="placeholder">
-        <img src="images/logo.png" alt="Tiger Icon">
-        <span>กรุณาเพิ่มรายชื่อก่อนปั่น!</span>
+        <img src="images/logo.png" alt="Tiger" />
+        <div>กรุณาเพิ่มรายชื่อก่อนปั่น!</div>
       </div>
     </div>
-    <div id="logo">
-      <img src="images/logo.png" alt="FPL Tiger" id="tigerLogo">
+    <div class="right">
+      <img src="images/logo.png" alt="FPL Tiger" id="tigerLogo" />
     </div>
 
     <!-- เสือเล็ก 7 ตัว -->
@@ -214,6 +232,7 @@
     <img src="images/logo.png" class="mini-tiger" alt="">
   </div>
 
+  <!-- รายชื่อ -->
   <div id="nameList"></div>
 
   <!-- Popup -->
@@ -225,11 +244,17 @@
     </div>
   </div>
 
-  <!-- preload -->
+  <!-- ปุ่มหมุนแบบลอย -->
+  <div class="floating-spin">
+    <button id="spinBtn">🐯 กดเสือเพื่อปั่น!</button>
+  </div>
+
+  <!-- เสียง -->
   <audio id="spinSound" src="sounds/spin.mp3" preload="auto"></audio>
   <audio id="winSound"  src="sounds/win.mp3"  preload="auto"></audio>
 
 <script>
+/* ---------- สถานะหลัก ---------- */
 let names = [];
 let startAngle = 0;
 let arc = 0;
@@ -241,271 +266,247 @@ const canvas = document.getElementById("wheelCanvas");
 const ctx = canvas.getContext("2d");
 const nameList = document.getElementById("nameList");
 const placeholder = document.getElementById("placeholder");
+const tigerLogo = document.getElementById("tigerLogo");
 
-// ================== เสือเล็ก: สปิน + เคลื่อนที่ทั่วจอ ==================
+/* ---------- ล้อ: ขนาดแบบ Responsive + คมบนจอ Retina ---------- */
+let wheelSize = 400; // CSS pixels (จะถูกเซ็ตใหม่อัตโนมัติ)
+function setCanvasSize(){
+  const dpr = window.devicePixelRatio || 1;
+  // ขนาดตามจอ: มือถือ ~ 88vw, จำกัดไม่เกิน 420px
+  const wrap = document.querySelector(".wheel-wrap");
+  const wrapPx = wrap.getBoundingClientRect().width || Math.min(window.innerWidth*0.9, 420);
+  wheelSize = Math.round(Math.min(420, wrapPx));
+  canvas.style.width = wheelSize + "px";
+  canvas.style.height = wheelSize + "px";
+  canvas.width  = Math.floor(wheelSize * dpr);
+  canvas.height = Math.floor(wheelSize * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  drawRouletteWheel();
+}
+
+/* ---------- เสือเล็ก: สปิน + เคลื่อนแบบเด้งขอบ ---------- */
 const tigers = Array.from(document.querySelectorAll(".mini-tiger"));
-
-// หมุนเสือเล็ก (4–10 วิต่อรอบ)
-tigers.forEach(tiger => {
-  const speed = (Math.random() * 6 + 4).toFixed(1);
-  tiger.style.animationDuration = `${speed}s`;
+tigers.forEach(t => {
+  const speed = (Math.random() * 6 + 4).toFixed(1); // 4–10 วิ/รอบ
+  t.style.animationDuration = `${speed}s`;
 });
-
-// เคลื่อนที่ด้วย requestAnimationFrame (สุ่มทิศ + เด้งขอบ)
-const BASE_SPEED_MIN = 40;
-const BASE_SPEED_MAX = 100;
-
-function rand(min, max){ return Math.random() * (max - min) + min; }
-
+const BASE_SPEED_MIN = 40, BASE_SPEED_MAX = 100;
 const tigerState = tigers.map(t => {
-  const w = 60, h = 60;
-  const x = rand(0, Math.max(0, window.innerWidth  - w));
-  const y = rand(0, Math.max(0, window.innerHeight - h));
-  const ang = rand(0, Math.PI * 2);
-  const spd = rand(BASE_SPEED_MIN, BASE_SPEED_MAX);
-  const vx = Math.cos(ang) * spd;
-  const vy = Math.sin(ang) * spd;
-  t.style.left = x + "px";
-  t.style.top  = y + "px";
+  const w = t.getBoundingClientRect().width || 56, h = w;
+  const x = Math.random() * Math.max(1, window.innerWidth  - w);
+  const y = Math.random() * Math.max(1, window.innerHeight - h);
+  const ang = Math.random() * Math.PI * 2;
+  const spd = Math.random() * (BASE_SPEED_MAX-BASE_SPEED_MIN) + BASE_SPEED_MIN;
+  const vx = Math.cos(ang) * spd, vy = Math.sin(ang) * spd;
+  t.style.left = x + "px"; t.style.top = y + "px";
   return { el:t, x, y, vx, vy, w, h };
 });
-
 let lastTs = null;
 function animateTigers(ts){
   if(lastTs === null) lastTs = ts;
-  const dt = (ts - lastTs)/1000;
-  lastTs = ts;
-
+  const dt = (ts - lastTs)/1000; lastTs = ts;
   const W = window.innerWidth, H = window.innerHeight;
-
   tigerState.forEach(s=>{
-    s.x += s.vx * dt;
-    s.y += s.vy * dt;
-
-    if(s.x <= 0){ s.x = 0; s.vx = Math.abs(s.vx); }
+    s.x += s.vx*dt; s.y += s.vy*dt;
+    if(s.x <= 0){ s.x=0; s.vx = Math.abs(s.vx); }
     if(s.x >= W - s.w){ s.x = W - s.w; s.vx = -Math.abs(s.vx); }
-    if(s.y <= 0){ s.y = 0; s.vy = Math.abs(s.vy); }
+    if(s.y <= 0){ s.y=0; s.vy = Math.abs(s.vy); }
     if(s.y >= H - s.h){ s.y = H - s.h; s.vy = -Math.abs(s.vy); }
-
-    s.el.style.left = s.x + "px";
-    s.el.style.top  = s.y + "px";
+    s.el.style.left = s.x + "px"; s.el.style.top = s.y + "px";
   });
-
   requestAnimationFrame(animateTigers);
 }
 requestAnimationFrame(animateTigers);
-
 window.addEventListener("resize", ()=>{
+  setCanvasSize();
   const W = window.innerWidth, H = window.innerHeight;
   tigerState.forEach(s=>{
-    s.x = Math.min(Math.max(0, s.x), Math.max(0, W - s.w));
-    s.y = Math.min(Math.max(0, s.y), Math.max(0, H - s.h));
-    s.el.style.left = s.x + "px";
-    s.el.style.top  = s.y + "px";
+    s.x = Math.min(Math.max(0,s.x), Math.max(0, W-s.w));
+    s.y = Math.min(Math.max(0,s.y), Math.max(0, H-s.h));
+    s.el.style.left = s.x + "px"; s.el.style.top = s.y + "px";
   });
 });
 
-// ======================= Lucky Wheel =======================
+/* ---------- รายชื่อ ---------- */
 function renderNameList(){
   nameList.innerHTML = "";
   names.forEach((n,i)=>{
-    let tag = document.createElement("div");
-    tag.className="name-tag";
-    tag.innerHTML = `${n} <button class="remove-btn" data-index="${i}">✖</button>`;
+    const tag = document.createElement("div");
+    tag.className = "name-tag";
+    tag.innerHTML = `${n} <button class="remove-btn" data-index="${i}" aria-label="ลบ">✖</button>`;
     nameList.appendChild(tag);
   });
   document.querySelectorAll(".remove-btn").forEach(btn=>{
     btn.addEventListener("click", e=>{
-      let idx = e.target.getAttribute("data-index");
+      const idx = Number(e.currentTarget.getAttribute("data-index"));
       names.splice(idx,1);
       arc = names.length>0 ? Math.PI*2/names.length : 0;
       drawRouletteWheel();
       renderNameList();
     });
   });
-  if(names.length === 0){
-    placeholder.style.display = "flex";
-    canvas.classList.add("hide");
-  } else {
-    placeholder.style.display = "none";
-    canvas.classList.remove("hide");
-  }
+  if(names.length === 0){ placeholder.classList.remove("hide"); canvas.classList.add("hide"); }
+  else{ placeholder.classList.add("hide"); canvas.classList.remove("hide"); }
 }
 
+/* ---------- วาดล้อแบบสเกลตามขนาด ---------- */
 function drawRouletteWheel() {
-  let outsideRadius = 180;
-  let textRadius = 140;
-  let insideRadius = 50;
-
-  ctx.clearRect(0,0,400,400);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   if(names.length === 0) return;
 
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 2;
-  ctx.font = "16px Segoe UI";
+  const size = wheelSize;          // CSS px
+  const cx = size/2, cy = size/2;  // center
+  const outsideRadius = size * 0.45;
+  const textRadius    = size * 0.35;
+  const insideRadius  = size * 0.125;
 
-  for(let i = 0; i < names.length; i++) {
-    let angle = startAngle + i * arc;
-    ctx.fillStyle = i % 2 === 0 ? "#ffcc80" : "#ffb74d";
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = Math.max(1, size*0.005);
+  ctx.font = `${Math.max(12, size*0.04)}px Segoe UI`;
+
+  for(let i=0;i<names.length;i++){
+    const angle = startAngle + i*arc;
+    ctx.fillStyle = i%2===0 ? "#ffcc80" : "#ffb74d";
 
     ctx.beginPath();
-    ctx.arc(200, 200, outsideRadius, angle, angle + arc, false);
-    ctx.arc(200, 200, insideRadius, angle + arc, angle, true);
-    ctx.fill();
-    ctx.stroke();
+    ctx.arc(cx, cy, outsideRadius, angle, angle+arc, false);
+    ctx.arc(cx, cy, insideRadius,  angle+arc, angle, true);
+    ctx.fill(); ctx.stroke();
 
     ctx.save();
     ctx.fillStyle = "#000";
-    ctx.translate(200 + Math.cos(angle + arc / 2) * textRadius,
-                  200 + Math.sin(angle + arc / 2) * textRadius);
-    ctx.rotate(angle + arc / 2);
-    let text = names[i];
+    ctx.translate(
+      cx + Math.cos(angle + arc/2) * textRadius,
+      cy + Math.sin(angle + arc/2) * textRadius
+    );
+    ctx.rotate(angle + arc/2);
+    const text = names[i];
     ctx.fillText(text, -ctx.measureText(text).width/2, 0);
     ctx.restore();
   }
 
-  // icon เสือตรงกลาง
-  let img = new Image();
+  // ไอคอนกลาง
+  const img = new Image();
   img.src = "images/logo.png";
-  img.onload = () => {
+  img.onload = ()=>{
     ctx.save();
     ctx.beginPath();
-    ctx.arc(200,200,insideRadius,0,Math.PI*2);
-    ctx.closePath();
+    ctx.arc(cx, cy, insideRadius, 0, Math.PI*2);
     ctx.clip();
-    ctx.drawImage(img,170,170,60,60);
+    const s = insideRadius*2*0.9; // เว้นขอบเล็กน้อย
+    ctx.drawImage(img, cx - s/2, cy - s/2, s, s);
     ctx.restore();
   };
 
-  // marker ด้านบน
+  // Marker ด้านบน (สามเหลี่ยม)
   ctx.fillStyle = "#000";
+  const triW = size * 0.06, triH = size * 0.07, top = size * 0.02;
   ctx.beginPath();
-  ctx.moveTo(190,20);
-  ctx.lineTo(210,20);
-  ctx.lineTo(200,40);
+  ctx.moveTo(cx - triW/2, top);
+  ctx.lineTo(cx + triW/2, top);
+  ctx.lineTo(cx, top + triH);
   ctx.closePath();
   ctx.fill();
 }
 
-function rotateWheel(timestamp) {
-  if (!startTime) startTime = timestamp;
-  let elapsed = timestamp - startTime;
-  let progress = elapsed / spinDuration;
-  let easeOut = Math.pow(1 - progress, 3);
-  let spinAngleDelta = easeOut * 20;
+/* ---------- การหมุน ---------- */
+function rotateWheel(ts){
+  if(!startTime) startTime = ts;
+  const elapsed = ts - startTime;
+  const progress = Math.min(1, elapsed / spinDuration);
+  const easeOut = Math.pow(1 - progress, 3);
+  const spinAngleDelta = easeOut * 20; // deg/frame-like
   startAngle += (spinAngleDelta * Math.PI / 180);
   drawRouletteWheel();
   if(elapsed < spinDuration) requestAnimationFrame(rotateWheel);
   else stopRotateWheel();
 }
-
-function stopRotateWheel() {
+function stopRotateWheel(){
   isSpinning = false;
-
-  let degrees = startAngle * 180 / Math.PI + 90;
-  let arcd = arc * 180 / Math.PI;
-  let index = Math.floor((360 - degrees % 360) / arcd) % names.length;
-  let winner = names[index];
+  const degrees = startAngle * 180/Math.PI + 90;
+  const arcd = arc * 180/Math.PI;
+  const index = Math.floor((360 - degrees % 360) / arcd) % names.length;
+  const winner = names[index];
 
   const spinS = document.getElementById("spinSound");
   const winS  = document.getElementById("winSound");
-  try { spinS.pause(); } catch(e){}
-  winS.currentTime = 0;
-  winS.play().catch(()=>{});
+  try{ spinS.pause(); }catch(e){}
+  winS.currentTime = 0; winS.play().catch(()=>{});
 
-  document.getElementById("tigerLogo").classList.remove("spin");
-
-  let prize = document.getElementById("prizeInput").value || "รางวัลพิเศษ";
-  document.getElementById("winnerText").innerHTML =
-    `คุณ <b>${winner}</b> ได้รับรางวัล <b>${prize}</b> 🏆`;
+  tigerLogo.classList.remove("spin");
+  const prize = document.getElementById("prizeInput").value || "รางวัลพิเศษ";
+  document.getElementById("winnerText").innerHTML = `คุณ <b>${winner}</b> ได้รับรางวัล <b>${prize}</b> 🏆`;
   document.getElementById("winnerPopup").classList.add("show");
 }
+function closePopup(){ document.getElementById("winnerPopup").classList.remove("show"); }
 
-function closePopup(){
-  document.getElementById("winnerPopup").classList.remove("show");
+/* ---------- เพิ่มชื่อ ---------- */
+function addName(val){
+  val = (val||"").trim();
+  if(!val) return;
+  names.push(val);
+  arc = Math.PI*2 / names.length;
+  drawRouletteWheel(); renderNameList();
+}
+function addNameFromInput(){
+  const el = document.getElementById("nameInput");
+  addName(el.value); el.value = "";
 }
 
-// ---------- Mobile-friendly triggers ----------
-// ปลดล็อกเสียงบน iOS/Android ครั้งแรกที่แตะ
+/* ---------- เสียงบนมือถือ: ปลดล็อกครั้งแรก ---------- */
 function unlockAudio(){
-  const spinS = document.getElementById("spinSound");
-  const winS  = document.getElementById("winSound");
-  [spinS, winS].forEach(a=>{
+  const a1 = document.getElementById("spinSound");
+  const a2 = document.getElementById("winSound");
+  [a1,a2].forEach(a=>{
     a.muted = true;
-    a.play().then(()=>{ a.pause(); a.currentTime = 0; a.muted = false; }).catch(()=>{});
+    a.play().then(()=>{ a.pause(); a.currentTime=0; a.muted=false; }).catch(()=>{});
   });
   document.removeEventListener("touchstart", unlockAudio);
   document.removeEventListener("mousedown", unlockAudio);
 }
-document.addEventListener("touchstart", unlockAudio, { once:true });
-document.addEventListener("mousedown", unlockAudio, { once:true });
+document.addEventListener("touchstart", unlockAudio, {once:true});
+document.addEventListener("mousedown", unlockAudio, {once:true});
 
-// Utility: รองรับทั้ง click และ touchend
+/* ---------- การกดที่รองรับมือถือ (tap) ---------- */
 function bindTap(el, handler){
   el.addEventListener("click", (e)=>{ e.preventDefault(); handler(); });
   el.addEventListener("touchend", (e)=>{ e.preventDefault(); handler(); }, { passive:false });
 }
 bindTap(document.getElementById("spinBtn"), startSpin);
-bindTap(document.getElementById("tigerLogo"), startSpin);
-
-// ปุ่มเพิ่มชื่อ (มือถือกดทีละชื่อ)
-bindTap(document.getElementById("addNameBtn"), () => {
-  addNameFromInput(document.getElementById("nameInput"));
-});
+bindTap(tigerLogo, startSpin);
+bindTap(document.getElementById("addNameBtn"), addNameFromInput);
 
 function startSpin(){
-  if(isSpinning || names.length === 0) {
-    if(names.length === 0){
-      alert("กรุณาเพิ่มรายชื่อก่อนปั่นนะ!");
-    }
+  if(isSpinning || names.length===0){
+    if(names.length===0) alert("กรุณาเพิ่มรายชื่อก่อนปั่น!");
     return;
   }
-  isSpinning = true;
-  startTime = null;
-
+  isSpinning = true; startTime = null;
   const spinS = document.getElementById("spinSound");
-  try {
-    spinS.currentTime = 0;
-    spinS.play().catch(()=>{ /* บางเครื่องบล็อกเสียง แต่ให้หมุนต่อได้ */ });
-  } catch(e){}
-
-  document.getElementById("tigerLogo").classList.add("spin");
+  try{ spinS.currentTime=0; spinS.play().catch(()=>{}); }catch(e){}
+  tigerLogo.classList.add("spin");
   requestAnimationFrame(rotateWheel);
 }
 
-// เพิ่มชื่อด้วย Enter (เดสก์ท็อป/มือถือที่มีปุ่ม Enter)
-document.getElementById("nameInput").addEventListener("keydown", function(e){
-  if(e.code === "Enter") {
-    e.preventDefault();
-    addNameFromInput(this);
-  }
+/* ---------- อินพุต/ไฟล์ ---------- */
+document.getElementById("nameInput").addEventListener("keydown", e=>{
+  if(e.code==="Enter"){ e.preventDefault(); addNameFromInput(); }
 });
-
-function addNameFromInput(inputEl){
-  let val = inputEl.value.trim();
-  if(val) {
-    names.push(val);
-    arc = Math.PI * 2 / names.length;
-    drawRouletteWheel();
-    renderNameList();
-    inputEl.value = "";
-  }
-}
-
-// อัปโหลดไฟล์ CSV
-document.getElementById("fileInput").addEventListener("change", function(e){
-  Papa.parse(e.target.files[0], {
-    complete: function(results) {
-      names = results.data.flat().map(n=>String(n).trim()).filter(n => n !== "");
-      arc = names.length>0 ? Math.PI * 2 / names.length : 0;
-      drawRouletteWheel();
-      renderNameList();
+document.getElementById("fileInput").addEventListener("change", (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  Papa.parse(file, {
+    complete: function(results){
+      names = results.data.flat().map(x=>String(x).trim()).filter(Boolean);
+      arc = names.length>0 ? Math.PI*2/names.length : 0;
+      drawRouletteWheel(); renderNameList();
     }
   });
 });
 
-drawRouletteWheel();
+/* ---------- เริ่มต้น ---------- */
+setCanvasSize();
 renderNameList();
+window.addEventListener("resize", setCanvasSize);
 </script>
 </body>
 </html>
