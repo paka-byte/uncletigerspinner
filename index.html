@@ -23,22 +23,23 @@
       background: var(--bg);
       color: var(--text);
       margin:0;
-      padding:16px 16px calc(100px + env(safe-area-inset-bottom));
+      padding:16px 16px calc(90px + env(safe-area-inset-bottom));
       -webkit-tap-highlight-color: transparent;
       overflow-x:hidden;
     }
     h1{ margin: 0 0 12px; font-size: clamp(20px, 5vw, 28px); text-align:center; }
 
-    /* กล่องอินพุต */
+    /* กล่องอินพุตบนมือถือ = คอลัมน์ */
     .inputs{
       display: grid;
       grid-template-columns: 1fr;
       gap: var(--gap);
       max-width: 720px;
-      margin: 0 auto 10px;
-      position: relative; z-index: 2;
+      margin: 0 auto 8px;
     }
-    .row{ display:flex; gap: var(--gap); }
+    .row{
+      display:flex; gap: var(--gap);
+    }
     .row > *{ flex:1 }
     input, button{
       width:100%;
@@ -50,23 +51,28 @@
       background:#fff;
       color:var(--text);
     }
+    input[type="file"]{ background:#fff; }
     #addNameBtn{ white-space:nowrap; flex:0 0 auto; min-width: 120px; }
 
-    /* โซนแท่นหมุนด้านบน (คงที่ด้วย vh) */
-    .hero{
-      position: relative;
-      height: 68vh;              /* เกือบเต็มจอ */
-      min-height: 320px;
+    /* ล้อ + โลโก้ จัดคอลัมน์บนจอเล็ก */
+    .container{
+      max-width: 980px;
+      margin: 10px auto 0;
       display:flex;
+      flex-direction: column;
       align-items:center;
-      justify-content:center;
-      z-index: 2;                /* เหนือเสือเล็ก */
+      gap: 16px;
+      position:relative;
+      z-index:2; /* เหนือเสือเล็ก */
     }
     .wheel-wrap{
       position: relative;
-      width: min(92vw, 68vh);    /* ไม่เกินความสูง hero */
-      aspect-ratio: 1/1;
-      display:flex; align-items:center; justify-content:center;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1/1;   /* ทำให้เป็นสี่เหลี่ยมจัตุรัสเสมอ */
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
     canvas{
       border-radius: 50%;
@@ -77,29 +83,24 @@
     }
     .hide{ display:none }
 
-    /* ลุงเสือ (ไอคอนใหญ่ล่างกลาง) */
-    #tigerLogo{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(100px + env(safe-area-inset-bottom)); /* อยู่เหนือปุ่มหมุน */
-      width: clamp(84px, 22vw, 160px);
+    #logo img{
+      width: min(48vw, 200px);
       cursor: pointer;
-      z-index: 22;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,.2));
+      display:block;
+      margin: 0 auto;
     }
     .spin{ animation: spin 2s linear infinite; }
-    @keyframes spin { from{transform:translateX(-50%) rotate(0)} to{transform:translateX(-50%) rotate(360deg)} }
+    @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
-    /* รายชื่อเลื่อน ไม่ดัน hero */
+    /* รายชื่อเลื่อนในกล่อง */
     #nameList{
-      margin: 8px auto 0;
-      display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+      margin-top: 8px;
+      display:flex; flex-wrap:wrap; gap:8px;
+      justify-content:center;
       max-width: 980px;
-      max-height: 18vh;          /* พอดีกับจอ */
+      max-height: 28vh;
       overflow:auto;
       padding: 8px;
-      z-index: 2; position: relative;
     }
     .name-tag{
       background: var(--chip);
@@ -121,13 +122,12 @@
       position: fixed;
       width: 56px;
       border-radius: 50%;
-      animation: spinMini 6s linear infinite;
+      animation: spin 6s linear infinite;
       opacity: .85;
       pointer-events: none;
       will-change: left, top;
       z-index:1; /* ใต้คอนเทนต์ */
     }
-    @keyframes spinMini { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
     /* Popup */
     #winnerPopup{
@@ -157,17 +157,18 @@
       color:#fff; font-weight:700;
     }
 
-    /* Placeholder ในล้อ */
+    /* Placeholder */
     .placeholder{
       position:absolute; inset:0;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap:8px; border-radius: 50%;
-      color:#333; text-align:center;
+      color:#333;
+      text-align:center;
     }
     .placeholder img{ width: 44px; height: 44px; animation: bounce 1.2s infinite; }
     @keyframes bounce{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 
-    /* ปุ่มหมุนลอย */
+    /* ปุ่มหมุนลอยติดขอบล่าง (นิ้วโป้งกดง่าย) */
     .floating-spin{
       position: fixed;
       left: 50%;
@@ -179,25 +180,26 @@
     #spinBtn{
       background: var(--btn-grad);
       color:#fff; font-weight:700;
-      padding: 14px 16px;
-      font-size: clamp(16px, 5vw, 18px);
+      padding: 14px 16px; font-size: clamp(16px, 5vw, 18px);
       width:100%;
       border-radius: 999px;
       box-shadow: 0 8px 16px rgba(255,145,77,.35);
     }
     #spinBtn:active{ transform: scale(.98); }
 
-    /* จอใหญ่: เพิ่มพื้นที่ hero */
+    /* จอใหญ่: จัดสองคอลัมน์ */
     @media (min-width: 900px){
-      .hero{ height: 72vh; }
-      #nameList{ max-height: 20vh; }
+      .container{ flex-direction: row; align-items: flex-start; gap: 28px; }
+      .right{ padding-top: 30px; }
+      .inputs{ grid-template-columns: 1fr 1fr; }
+      .row{ gap:8px }
     }
   </style>
 </head>
 <body>
   <h1>🎁 Lucky Draw — FPL Tiger</h1>
 
-  <!-- อินพุต -->
+  <!-- กลุ่มอินพุตบนสุด -->
   <div class="inputs">
     <input type="file" id="fileInput" accept=".csv,.xlsx" />
     <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?" />
@@ -207,8 +209,8 @@
     </div>
   </div>
 
-  <!-- แท่นหมุน (คงที่ด้านบน) -->
-  <section class="hero">
+  <!-- ล้อ + โลโก้ -->
+  <div class="container">
     <div class="wheel-wrap">
       <canvas id="wheelCanvas" class="hide"></canvas>
       <div id="placeholder" class="placeholder">
@@ -216,12 +218,21 @@
         <div>กรุณาเพิ่มรายชื่อก่อนปั่น!</div>
       </div>
     </div>
-  </section>
+    <div class="right">
+      <img src="images/logo.png" alt="FPL Tiger" id="tigerLogo" />
+    </div>
 
-  <!-- ลุงเสืออยู่ล่างกลาง (กดได้เหมือนปุ่มหมุน) -->
-  <img src="images/logo.png" alt="FPL Tiger" id="tigerLogo" />
+    <!-- เสือเล็ก 7 ตัว -->
+    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="">
+  </div>
 
-  <!-- รายชื่อ (เลื่อนในกล่อง) -->
+  <!-- รายชื่อ -->
   <div id="nameList"></div>
 
   <!-- Popup -->
@@ -237,15 +248,6 @@
   <div class="floating-spin">
     <button id="spinBtn">🐯 กดเสือเพื่อปั่น!</button>
   </div>
-
-  <!-- เสือเล็ก 7 ตัว -->
-  <img src="images/logo.png" class="mini-tiger" alt="">
-  <img src="images/logo.png" class="mini-tiger" alt="">
-  <img src="images/logo.png" class="mini-tiger" alt="">
-  <img src="images/logo.png" class="mini-tiger" alt="">
-  <img src="images/logo.png" class="mini-tiger" alt="">
-  <img src="images/logo.png" class="mini-tiger" alt="">
-  <img src="images/logo.png" class="mini-tiger" alt="">
 
   <!-- เสียง -->
   <audio id="spinSound" src="sounds/spin.mp3" preload="auto"></audio>
@@ -266,13 +268,14 @@ const nameList = document.getElementById("nameList");
 const placeholder = document.getElementById("placeholder");
 const tigerLogo = document.getElementById("tigerLogo");
 
-/* ---------- ล้อ: ขนาด Responsive + คมบน Retina ---------- */
-let wheelSize = 400;
+/* ---------- ล้อ: ขนาดแบบ Responsive + คมบนจอ Retina ---------- */
+let wheelSize = 400; // CSS pixels (จะถูกเซ็ตใหม่อัตโนมัติ)
 function setCanvasSize(){
   const dpr = window.devicePixelRatio || 1;
+  // ขนาดตามจอ: มือถือ ~ 88vw, จำกัดไม่เกิน 420px
   const wrap = document.querySelector(".wheel-wrap");
   const wrapPx = wrap.getBoundingClientRect().width || Math.min(window.innerWidth*0.9, 420);
-  wheelSize = Math.round(Math.min(520, wrapPx));  // เพดานนิดหน่อย
+  wheelSize = Math.round(Math.min(420, wrapPx));
   canvas.style.width = wheelSize + "px";
   canvas.style.height = wheelSize + "px";
   canvas.width  = Math.floor(wheelSize * dpr);
@@ -281,10 +284,10 @@ function setCanvasSize(){
   drawRouletteWheel();
 }
 
-/* ---------- เสือเล็ก: สปิน + เคลื่อนที่เด้งขอบ ---------- */
+/* ---------- เสือเล็ก: สปิน + เคลื่อนแบบเด้งขอบ ---------- */
 const tigers = Array.from(document.querySelectorAll(".mini-tiger"));
 tigers.forEach(t => {
-  const speed = (Math.random() * 6 + 4).toFixed(1);
+  const speed = (Math.random() * 6 + 4).toFixed(1); // 4–10 วิ/รอบ
   t.style.animationDuration = `${speed}s`;
 });
 const BASE_SPEED_MIN = 40, BASE_SPEED_MAX = 100;
@@ -338,20 +341,21 @@ function renderNameList(){
       const idx = Number(e.currentTarget.getAttribute("data-index"));
       names.splice(idx,1);
       arc = names.length>0 ? Math.PI*2/names.length : 0;
-      drawRouletteWheel(); renderNameList();
+      drawRouletteWheel();
+      renderNameList();
     });
   });
   if(names.length === 0){ placeholder.classList.remove("hide"); canvas.classList.add("hide"); }
   else{ placeholder.classList.add("hide"); canvas.classList.remove("hide"); }
 }
 
-/* ---------- วาดล้อ ---------- */
+/* ---------- วาดล้อแบบสเกลตามขนาด ---------- */
 function drawRouletteWheel() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(names.length === 0) return;
 
-  const size = wheelSize;
-  const cx = size/2, cy = size/2;
+  const size = wheelSize;          // CSS px
+  const cx = size/2, cy = size/2;  // center
   const outsideRadius = size * 0.45;
   const textRadius    = size * 0.35;
   const insideRadius  = size * 0.125;
@@ -389,12 +393,12 @@ function drawRouletteWheel() {
     ctx.beginPath();
     ctx.arc(cx, cy, insideRadius, 0, Math.PI*2);
     ctx.clip();
-    const s = insideRadius*2*0.9;
+    const s = insideRadius*2*0.9; // เว้นขอบเล็กน้อย
     ctx.drawImage(img, cx - s/2, cy - s/2, s, s);
     ctx.restore();
   };
 
-  // Marker บน
+  // Marker ด้านบน (สามเหลี่ยม)
   ctx.fillStyle = "#000";
   const triW = size * 0.06, triH = size * 0.07, top = size * 0.02;
   ctx.beginPath();
@@ -405,13 +409,13 @@ function drawRouletteWheel() {
   ctx.fill();
 }
 
-/* ---------- หมุน ---------- */
+/* ---------- การหมุน ---------- */
 function rotateWheel(ts){
   if(!startTime) startTime = ts;
   const elapsed = ts - startTime;
   const progress = Math.min(1, elapsed / spinDuration);
   const easeOut = Math.pow(1 - progress, 3);
-  const spinAngleDelta = easeOut * 20;
+  const spinAngleDelta = easeOut * 20; // deg/frame-like
   startAngle += (spinAngleDelta * Math.PI / 180);
   drawRouletteWheel();
   if(elapsed < spinDuration) requestAnimationFrame(rotateWheel);
@@ -463,7 +467,7 @@ function unlockAudio(){
 document.addEventListener("touchstart", unlockAudio, {once:true});
 document.addEventListener("mousedown", unlockAudio, {once:true});
 
-/* ---------- Tap-friendly ---------- */
+/* ---------- การกดที่รองรับมือถือ (tap) ---------- */
 function bindTap(el, handler){
   el.addEventListener("click", (e)=>{ e.preventDefault(); handler(); });
   el.addEventListener("touchend", (e)=>{ e.preventDefault(); handler(); }, { passive:false });
@@ -480,7 +484,6 @@ function startSpin(){
   isSpinning = true; startTime = null;
   const spinS = document.getElementById("spinSound");
   try{ spinS.currentTime=0; spinS.play().catch(()=>{}); }catch(e){}
-  // ทำให้ลุงเสือหมุน
   tigerLogo.classList.add("spin");
   requestAnimationFrame(rotateWheel);
 }
@@ -500,7 +503,7 @@ document.getElementById("fileInput").addEventListener("change", (e)=>{
   });
 });
 
-/* ---------- เริ่ม ---------- */
+/* ---------- เริ่มต้น ---------- */
 setCanvasSize();
 renderNameList();
 window.addEventListener("resize", setCanvasSize);
