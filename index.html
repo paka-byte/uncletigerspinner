@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>FPL Tiger Lucky Draw </title>
+  <title>FPL Tiger Lucky Draw</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
@@ -24,14 +24,17 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    #spinBtn, #addNameBtn {
+    /* ให้อยู่บนเสือเล็ก */
+    #nameInput, #addNameBtn, #fileInput, #prizeInput { position: relative; z-index: 2; }
+
+    #spinBtn {
       background: linear-gradient(135deg,#ff914d,#ffb84d);
       color: #fff;
       font-weight: bold;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       position: relative; z-index: 2;
     }
-    #spinBtn:hover, #addNameBtn:hover { opacity: 0.9; }
+    #spinBtn:hover { opacity: 0.9; }
 
     .container {
       position: relative;
@@ -40,7 +43,7 @@
       align-items: center;
       gap: 40px;
       margin-top: 20px;
-      z-index: 2;
+      z-index: 2; /* อยู่เหนือเสือเล็ก */
     }
     .wheel-wrap {
       position: relative;
@@ -100,9 +103,9 @@
       animation-iteration-count: infinite;
       animation-timing-function: linear;
       opacity: 0.85;
-      pointer-events: none;
+      pointer-events: none;     /* ไม่จับทัช */
       will-change: left, top;
-      z-index: 1;
+      z-index: 1;               /* ใต้คอนเทนต์ */
     }
 
     /* Popup */
@@ -117,9 +120,12 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.4s ease;
-      z-index: 10;
+      z-index: 10; /* บนสุดตอนโชว์ */
     }
-    #winnerPopup.show { opacity: 1; pointer-events: auto; }
+    #winnerPopup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
     .popup-card {
       background: #f6d2b8;
       border: 2px solid #000;
@@ -167,18 +173,9 @@
       height: 40px;
       animation: bounce 1.2s infinite;
     }
-    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
-
-    /* แถวกรอกชื่อ + ปุ่มส่ง ให้เรียงสวยบนมือถือ */
-    .name-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    #nameInput {
-      min-width: 220px;
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
     }
   </style>
 </head>
@@ -188,18 +185,10 @@
   <input type="file" id="fileInput" accept=".csv,.xlsx"><br>
   <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?"><br>
 
-  <div class="name-row">
-    <input
-      type="text"
-      id="nameInput"
-      placeholder="พิมพ์ชื่อผู้ร่วมลุ้น"
-      autocapitalize="words"
-      autocomplete="off"
-      spellcheck="false"
-      enterkeyhint="done"
-    >
-    <button id="addNameBtn">➕ ส่งชื่อ</button>
-  </div>
+  <!-- ช่องชื่อ + ปุ่มเพิ่มชื่อ (มือถือกดได้ทีละชื่อ) -->
+  <input type="text" id="nameInput" placeholder="พิมพ์ชื่อแล้วกด ➕ เพิ่มชื่อ หรือ Enter">
+  <button id="addNameBtn" type="button" aria-label="เพิ่มชื่อ">➕ เพิ่มชื่อ</button>
+  <br>
 
   <button id="spinBtn">🐯 กดเสือเพื่อปั่น!</button>
 
@@ -236,6 +225,7 @@
     </div>
   </div>
 
+  <!-- preload -->
   <audio id="spinSound" src="sounds/spin.mp3" preload="auto"></audio>
   <audio id="winSound"  src="sounds/win.mp3"  preload="auto"></audio>
 
@@ -436,7 +426,7 @@ function closePopup(){
 }
 
 // ---------- Mobile-friendly triggers ----------
-// ปลดล็อกเสียงครั้งแรกที่แตะ
+// ปลดล็อกเสียงบน iOS/Android ครั้งแรกที่แตะ
 function unlockAudio(){
   const spinS = document.getElementById("spinSound");
   const winS  = document.getElementById("winSound");
@@ -450,7 +440,7 @@ function unlockAudio(){
 document.addEventListener("touchstart", unlockAudio, { once:true });
 document.addEventListener("mousedown", unlockAudio, { once:true });
 
-// ยูทิลิตี้ bindTap: รองรับทั้ง click และ touchend
+// Utility: รองรับทั้ง click และ touchend
 function bindTap(el, handler){
   el.addEventListener("click", (e)=>{ e.preventDefault(); handler(); });
   el.addEventListener("touchend", (e)=>{ e.preventDefault(); handler(); }, { passive:false });
@@ -458,7 +448,7 @@ function bindTap(el, handler){
 bindTap(document.getElementById("spinBtn"), startSpin);
 bindTap(document.getElementById("tigerLogo"), startSpin);
 
-// ปุ่มส่งชื่อ (มือถือกดทีละชื่อ)
+// ปุ่มเพิ่มชื่อ (มือถือกดทีละชื่อ)
 bindTap(document.getElementById("addNameBtn"), () => {
   addNameFromInput(document.getElementById("nameInput"));
 });
@@ -476,16 +466,16 @@ function startSpin(){
   const spinS = document.getElementById("spinSound");
   try {
     spinS.currentTime = 0;
-    spinS.play().catch(()=>{});
+    spinS.play().catch(()=>{ /* บางเครื่องบล็อกเสียง แต่ให้หมุนต่อได้ */ });
   } catch(e){}
 
   document.getElementById("tigerLogo").classList.add("spin");
   requestAnimationFrame(rotateWheel);
 }
 
-// เพิ่มชื่อด้วย Space/Enter (เดิม) + ปุ่มส่ง (ใหม่)
+// เพิ่มชื่อด้วย Enter (เดสก์ท็อป/มือถือที่มีปุ่ม Enter)
 document.getElementById("nameInput").addEventListener("keydown", function(e){
-  if(e.code === "Space" || e.code === "Enter") {
+  if(e.code === "Enter") {
     e.preventDefault();
     addNameFromInput(this);
   }
@@ -499,9 +489,6 @@ function addNameFromInput(inputEl){
     drawRouletteWheel();
     renderNameList();
     inputEl.value = "";
-
-    // ฟีดแบ็กสั้นๆบนมือถือ
-    if (navigator.vibrate) navigator.vibrate(10);
   }
 }
 
