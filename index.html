@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>FPL Tiger Lucky Draw</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
     :root{
@@ -15,193 +15,94 @@
       --bg:#f6d2b8;
       --chip:#ffe5c2;
       --chip-border:#ff914d;
+      --maxw: 980px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      font-family: "Segoe UI", Tahoma, sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans Thai", Tahoma, sans-serif;
       background: var(--bg);
       color: var(--text);
       margin:0;
-      padding:16px 16px calc(90px + env(safe-area-inset-bottom));
+      padding:16px 16px calc(96px + env(safe-area-inset-bottom));
       -webkit-tap-highlight-color: transparent;
       overflow-x:hidden;
     }
     h1{ margin: 0 0 12px; font-size: clamp(20px, 5vw, 28px); text-align:center; }
 
-    /* กล่องอินพุตบนมือถือ = คอลัมน์ */
+    /* กล่องอินพุต: คอลัมน์บนมือถือ + sticky บนสุดเพื่อใช้นิ้วโป้ง */
     .inputs{
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: var(--gap);
-      max-width: 720px;
-      margin: 0 auto 8px;
+      position: sticky; top: calc(env(safe-area-inset-top) + 6px);
+      z-index: 10;
+      display: grid; grid-template-columns: 1fr; gap: var(--gap);
+      max-width: 720px; margin: 0 auto 8px;
+      background: color-mix(in srgb, var(--bg) 92%, white);
+      backdrop-filter: blur(4px);
+      padding: 8px; border-radius: 14px; border: 1px solid #00000020;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
     }
-    .row{
-      display:flex; gap: var(--gap);
-    }
+    .row{ display:flex; gap: var(--gap); }
     .row > *{ flex:1 }
+
     input, button{
-      width:100%;
-      padding: 12px 14px;
-      font-size: 16px;
-      border: none;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      background:#fff;
-      color:var(--text);
+      width:100%; padding: 13px 14px;
+      font-size: 16px; border: none; border-radius: var(--radius);
+      box-shadow: var(--shadow); background:#fff; color:var(--text);
+      min-height: 44px; /* mobile touch target */
     }
     input[type="file"]{ background:#fff; }
     #addNameBtn{ white-space:nowrap; flex:0 0 auto; min-width: 120px; }
 
-    /* ล้อ + โลโก้ จัดคอลัมน์บนจอเล็ก */
-    .container{
-      max-width: 980px;
-      margin: 10px auto 0;
-      display:flex;
-      flex-direction: column;
-      align-items:center;
-      gap: 16px;
-      position:relative;
-      z-index:2; /* เหนือเสือเล็ก */
-    }
-    .wheel-wrap{
-      position: relative;
-      width: 100%;
-      max-width: 420px;
-      aspect-ratio: 1/1;   /* ทำให้เป็นสี่เหลี่ยมจัตุรัสเสมอ */
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    canvas{
-      border-radius: 50%;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.25);
-      background: #fff;
-      width: 100%;
-      height: 100%;
-    }
+    /* ล้อ + โลโก้ เป็นคอลัมน์บนจอเล็ก */
+    .container{ max-width: var(--maxw); margin: 10px auto 0; display:flex; flex-direction: column; align-items:center; gap: 16px; position:relative; z-index:2; }
+    .wheel-wrap{ position: relative; width: 100%; max-width: 460px; aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; }
+    canvas{ border-radius: 50%; box-shadow: 0 6px 15px rgba(0,0,0,0.25); background: #fff; width: 100%; height: 100%; }
     .hide{ display:none }
 
-    #logo img{
-      width: min(48vw, 200px);
-      cursor: pointer;
-      display:block;
-      margin: 0 auto;
-    }
+    #logo img, #tigerLogo{ width: min(48vw, 200px); cursor: pointer; display:block; margin: 0 auto; }
     .spin{ animation: spin 2s linear infinite; }
     @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
     /* รายชื่อเลื่อนในกล่อง */
-    #nameList{
-      margin-top: 8px;
-      display:flex; flex-wrap:wrap; gap:8px;
-      justify-content:center;
-      max-width: 980px;
-      max-height: 28vh;
-      overflow:auto;
-      padding: 8px;
-    }
-    .name-tag{
-      background: var(--chip);
-      border: 1px solid var(--chip-border);
-      border-radius: 18px;
-      padding: 6px 12px;
-      display:flex; align-items:center; gap:6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      font-size: 14px;
-      white-space: nowrap;
-    }
-    .remove-btn{
-      background:none; color:#c0392b; border:none;
-      font-size:14px; cursor:pointer; padding:0 2px;
-    }
+    #nameList{ margin-top: 8px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width: var(--maxw); max-height: 32svh; overflow:auto; padding: 8px; }
+    .name-tag{ background: var(--chip); border: 1px solid var(--chip-border); border-radius: 18px; padding: 8px 12px; display:flex; align-items:center; gap:8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); font-size: 15px; line-height: 1; white-space: nowrap; }
+    .remove-btn{ background:none; color:#c0392b; border:none; font-size:18px; cursor:pointer; padding:0 4px; min-width:32px; min-height:32px; display:grid; place-items:center; border-radius: 8px; }
+    .remove-btn:active{ transform: scale(.96); }
 
-    /* เสือเล็ก วิ่งทั่วจอ (ไม่บังทัช) */
-    .mini-tiger{
-      position: fixed;
-      width: 56px;
-      border-radius: 50%;
-      animation: spin 6s linear infinite;
-      opacity: .85;
-      pointer-events: none;
-      will-change: left, top;
-      z-index:1; /* ใต้คอนเทนต์ */
-    }
+    /* เสือเล็ก วิ่งทั่วจอ (ลด motion เมื่อผู้ใช้ตั้งค่า) */
+    .mini-tiger{ position: fixed; width: 56px; border-radius: 50%; animation: spin 6s linear infinite; opacity: .85; pointer-events: none; will-change: left, top; z-index:1; }
+    @media (prefers-reduced-motion: reduce){ .mini-tiger{ animation: none; } }
 
     /* Popup */
-    #winnerPopup{
-      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background: rgba(0,0,0,.25);
-      opacity:0; pointer-events:none;
-      transition: opacity .25s ease; z-index: 30;
-      padding: 16px;
-    }
+    #winnerPopup{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,.25); opacity:0; pointer-events:none; transition: opacity .25s ease; z-index: 30; padding: 16px; }
     #winnerPopup.show{ opacity:1; pointer-events:auto; }
-    .popup-card{
-      background: var(--bg);
-      border:2px solid #000;
-      border-radius: 16px;
-      padding: 22px 24px;
-      text-align:center;
-      box-shadow: 0 8px 20px rgba(0,0,0,.25);
-      transform: scale(.92);
-      animation: pop .3s ease forwards;
-      max-width: 90vw;
-    }
+    .popup-card{ background: var(--bg); border:2px solid #000; border-radius: 16px; padding: 22px 24px; text-align:center; box-shadow: 0 8px 20px rgba(0,0,0,.25); transform: scale(.92); animation: pop .3s ease forwards; max-width: 92vw; }
     @keyframes pop{ to{ transform: scale(1) } }
     .popup-card h2{ margin:0 0 10px; font-size: clamp(20px, 5vw, 28px); }
     .popup-card p{ margin:0 0 14px; font-size: clamp(16px, 4.5vw, 20px); }
-    .popup-card button{
-      background: var(--btn-grad);
-      color:#fff; font-weight:700;
-    }
+    .popup-card button{ background: var(--btn-grad); color:#fff; font-weight:700; }
 
     /* Placeholder */
-    .placeholder{
-      position:absolute; inset:0;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:8px; border-radius: 50%;
-      color:#333;
-      text-align:center;
-    }
+    .placeholder{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border-radius: 50%; color:#333; text-align:center; padding: 16px; }
     .placeholder img{ width: 44px; height: 44px; animation: bounce 1.2s infinite; }
     @keyframes bounce{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @media (prefers-reduced-motion: reduce){ .placeholder img{ animation: none; } }
 
     /* ปุ่มหมุนลอยติดขอบล่าง (นิ้วโป้งกดง่าย) */
-    .floating-spin{
-      position: fixed;
-      left: 50%;
-      bottom: calc(12px + env(safe-area-inset-bottom));
-      transform: translateX(-50%);
-      width: min(640px, 92vw);
-      z-index: 25;
-    }
-    #spinBtn{
-      background: var(--btn-grad);
-      color:#fff; font-weight:700;
-      padding: 14px 16px; font-size: clamp(16px, 5vw, 18px);
-      width:100%;
-      border-radius: 999px;
-      box-shadow: 0 8px 16px rgba(255,145,77,.35);
-    }
-    #spinBtn:active{ transform: scale(.98); }
+    .floating-spin{ position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, 92vw); z-index: 25; }
+    #spinBtn{ background: var(--btn-grad); color:#fff; font-weight:700; padding: 16px 16px; font-size: clamp(16px, 5vw, 18px); width:100%; border-radius: 999px; box-shadow: 0 10px 18px rgba(255,145,77,.35); min-height: 50px; }
+    #spinBtn:active{ transform: translateX(-0%) scale(.98); }
 
     /* จอใหญ่: จัดสองคอลัมน์ */
-    @media (min-width: 900px){
-      .container{ flex-direction: row; align-items: flex-start; gap: 28px; }
-      .right{ padding-top: 30px; }
-      .inputs{ grid-template-columns: 1fr 1fr; }
-      .row{ gap:8px }
-    }
+    @media (min-width: 900px){ .container{ flex-direction: row; align-items: flex-start; gap: 28px; } .right{ padding-top: 30px; } .inputs{ grid-template-columns: 1fr 1fr; } .row{ gap:8px } }
   </style>
 </head>
 <body>
   <h1>🎁 Lucky Draw — FPL Tiger</h1>
 
-  <!-- กลุ่มอินพุตบนสุด -->
-  <div class="inputs">
-    <input type="file" id="fileInput" accept=".csv,.xlsx" />
+  <!-- กลุ่มอินพุตบนสุด (Sticky) -->
+  <div class="inputs" role="region" aria-label="ตัวเลือกการจับรางวัล">
+    <input type="file" id="fileInput" accept=".csv" />
     <input type="text" id="prizeInput" placeholder="ของรางวัลคืออะไร?" />
     <div class="row">
       <input type="text" id="nameInput" placeholder="พิมพ์ชื่อแล้วกด ➕ เพิ่มชื่อ หรือ Enter" />
@@ -213,7 +114,7 @@
   <div class="container">
     <div class="wheel-wrap">
       <canvas id="wheelCanvas" class="hide"></canvas>
-      <div id="placeholder" class="placeholder">
+      <div id="placeholder" class="placeholder" aria-live="polite">
         <img src="images/logo.png" alt="Tiger" />
         <div>กรุณาเพิ่มรายชื่อก่อนปั่น!</div>
       </div>
@@ -223,24 +124,24 @@
     </div>
 
     <!-- เสือเล็ก 7 ตัว -->
-    <img src="images/logo.png" class="mini-tiger" alt="">
-    <img src="images/logo.png" class="mini-tiger" alt="">
-    <img src="images/logo.png" class="mini-tiger" alt="">
-    <img src="images/logo.png" class="mini-tiger" alt="">
-    <img src="images/logo.png" class="mini-tiger" alt="">
-    <img src="images/logo.png" class="mini-tiger" alt="">
-    <img src="images/logo.png" class="mini-tiger" alt="">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
+    <img src="images/logo.png" class="mini-tiger" alt="" loading="lazy">
   </div>
 
   <!-- รายชื่อ -->
-  <div id="nameList"></div>
+  <div id="nameList" aria-live="polite"></div>
 
   <!-- Popup -->
-  <div id="winnerPopup">
+  <div id="winnerPopup" aria-modal="true" role="dialog">
     <div class="popup-card">
       <h2>🎉 ยินดีด้วย! 🎉</h2>
       <p id="winnerText"></p>
-      <button onclick="closePopup()">ปิด</button>
+      <button id="closePopupBtn">ปิด</button>
     </div>
   </div>
 
@@ -267,15 +168,15 @@ const ctx = canvas.getContext("2d");
 const nameList = document.getElementById("nameList");
 const placeholder = document.getElementById("placeholder");
 const tigerLogo = document.getElementById("tigerLogo");
+const closePopupBtn = document.getElementById("closePopupBtn");
 
 /* ---------- ล้อ: ขนาดแบบ Responsive + คมบนจอ Retina ---------- */
-let wheelSize = 400; // CSS pixels (จะถูกเซ็ตใหม่อัตโนมัติ)
+let wheelSize = 400; // CSS pixels
 function setCanvasSize(){
   const dpr = window.devicePixelRatio || 1;
-  // ขนาดตามจอ: มือถือ ~ 88vw, จำกัดไม่เกิน 420px
   const wrap = document.querySelector(".wheel-wrap");
-  const wrapPx = wrap.getBoundingClientRect().width || Math.min(window.innerWidth*0.9, 420);
-  wheelSize = Math.round(Math.min(420, wrapPx));
+  const wrapPx = wrap.getBoundingClientRect().width || Math.min(window.innerWidth*0.9, 460);
+  wheelSize = Math.round(Math.min(460, wrapPx));
   canvas.style.width = wheelSize + "px";
   canvas.style.height = wheelSize + "px";
   canvas.width  = Math.floor(wheelSize * dpr);
@@ -284,12 +185,15 @@ function setCanvasSize(){
   drawRouletteWheel();
 }
 
+// ใช้ ResizeObserver เพื่อตอบสนองการหมุนจอ/เปลี่ยน layout ได้แม่น
+const ro = new ResizeObserver(() => setCanvasSize());
+ro.observe(document.querySelector('.wheel-wrap'));
+
 /* ---------- เสือเล็ก: สปิน + เคลื่อนแบบเด้งขอบ ---------- */
 const tigers = Array.from(document.querySelectorAll(".mini-tiger"));
-tigers.forEach(t => {
-  const speed = (Math.random() * 6 + 4).toFixed(1); // 4–10 วิ/รอบ
-  t.style.animationDuration = `${speed}s`;
-});
+try{
+  tigers.forEach(t => { const speed = (Math.random() * 6 + 4).toFixed(1); t.style.animationDuration = `${speed}s`; });
+}catch(e){}
 const BASE_SPEED_MIN = 40, BASE_SPEED_MAX = 100;
 const tigerState = tigers.map(t => {
   const w = t.getBoundingClientRect().width || 56, h = w;
@@ -333,7 +237,7 @@ function renderNameList(){
   names.forEach((n,i)=>{
     const tag = document.createElement("div");
     tag.className = "name-tag";
-    tag.innerHTML = `${n} <button class="remove-btn" data-index="${i}" aria-label="ลบ">✖</button>`;
+    tag.innerHTML = `${n} <button class="remove-btn" data-index="${i}" aria-label="ลบชื่อ ${n}">✖</button>`;
     nameList.appendChild(tag);
   });
   document.querySelectorAll(".remove-btn").forEach(btn=>{
@@ -349,7 +253,7 @@ function renderNameList(){
   else{ placeholder.classList.add("hide"); canvas.classList.remove("hide"); }
 }
 
-/* ---------- วาดล้อแบบสเกลตามขนาด ---------- */
+/* ---------- วาดล้อ ---------- */
 function drawRouletteWheel() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(names.length === 0) return;
@@ -362,7 +266,7 @@ function drawRouletteWheel() {
 
   ctx.strokeStyle = "#000";
   ctx.lineWidth = Math.max(1, size*0.005);
-  ctx.font = `${Math.max(12, size*0.04)}px Segoe UI`;
+  ctx.font = `${Math.max(12, size*0.04)}px Segoe UI, system-ui`;
 
   for(let i=0;i<names.length;i++){
     const angle = startAngle + i*arc;
@@ -437,8 +341,16 @@ function stopRotateWheel(){
   const prize = document.getElementById("prizeInput").value || "รางวัลพิเศษ";
   document.getElementById("winnerText").innerHTML = `คุณ <b>${winner}</b> ได้รับรางวัล <b>${prize}</b> 🏆`;
   document.getElementById("winnerPopup").classList.add("show");
+  // ล็อก scroll เมื่อ popup เปิด (กันหน้าสะเทือนบนมือถือ)
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
 }
-function closePopup(){ document.getElementById("winnerPopup").classList.remove("show"); }
+function closePopup(){
+  document.getElementById("winnerPopup").classList.remove("show");
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+}
+closePopupBtn.addEventListener('click', closePopup);
 
 /* ---------- เพิ่มชื่อ ---------- */
 function addName(val){
@@ -464,23 +376,17 @@ function unlockAudio(){
   document.removeEventListener("touchstart", unlockAudio);
   document.removeEventListener("mousedown", unlockAudio);
 }
-document.addEventListener("touchstart", unlockAudio, {once:true});
-document.addEventListener("mousedown", unlockAudio, {once:true});
+// ใช้ pointerdown รองรับทั้ง mouse/touch แบบไม่ซ้ำซ้อน
+['pointerdown'].forEach(ev=>document.addEventListener(ev, unlockAudio, {once:true}));
 
 /* ---------- การกดที่รองรับมือถือ (tap) ---------- */
-function bindTap(el, handler){
-  el.addEventListener("click", (e)=>{ e.preventDefault(); handler(); });
-  el.addEventListener("touchend", (e)=>{ e.preventDefault(); handler(); }, { passive:false });
-}
+function bindTap(el, handler){ el.addEventListener('click', (e)=>{ e.preventDefault(); handler(); }, { passive:false }); }
 bindTap(document.getElementById("spinBtn"), startSpin);
 bindTap(tigerLogo, startSpin);
 bindTap(document.getElementById("addNameBtn"), addNameFromInput);
 
 function startSpin(){
-  if(isSpinning || names.length===0){
-    if(names.length===0) alert("กรุณาเพิ่มรายชื่อก่อนปั่น!");
-    return;
-  }
+  if(isSpinning || names.length===0){ if(names.length===0) alert("กรุณาเพิ่มรายชื่อก่อนปั่น!"); return; }
   isSpinning = true; startTime = null;
   const spinS = document.getElementById("spinSound");
   try{ spinS.currentTime=0; spinS.play().catch(()=>{}); }catch(e){}
@@ -489,14 +395,26 @@ function startSpin(){
 }
 
 /* ---------- อินพุต/ไฟล์ ---------- */
-document.getElementById("nameInput").addEventListener("keydown", e=>{
-  if(e.code==="Enter"){ e.preventDefault(); addNameFromInput(); }
-});
-document.getElementById("fileInput").addEventListener("change", (e)=>{
+const nameInput = document.getElementById("nameInput");
+nameInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); addNameFromInput(); } });
+
+const fileInput = document.getElementById("fileInput");
+fileInput.addEventListener("change", (e)=>{
   const file = e.target.files[0]; if(!file) return;
+  if(!/\.csv$/i.test(file.name)){
+    alert('ตอนนี้รองรับไฟล์ .csv เท่านั้น (ถ้าเป็น .xlsx ให้บันทึกเป็น CSV ก่อน)');
+    e.target.value = '';
+    return;
+  }
   Papa.parse(file, {
+    skipEmptyLines: true,
     complete: function(results){
-      names = results.data.flat().map(x=>String(x).trim()).filter(Boolean);
+      // แปลงเป็น 1 มิติ + กรอง header ที่ชื่อดูเหมือนคอลัมน์
+      const flat = results.data.flat().map(x=>String(x).trim()).filter(Boolean);
+      const maybeNoHeader = flat.filter(v=>!/name|ชื่อ|player/i.test(v));
+      names = maybeNoHeader.length ? maybeNoHeader : flat;
+      // จำกัดความยาวชื่อเพื่อให้พอดีจอเล็ก
+      names = names.map(n => n.length>22 ? n.slice(0,22)+'…' : n);
       arc = names.length>0 ? Math.PI*2/names.length : 0;
       drawRouletteWheel(); renderNameList();
     }
@@ -506,7 +424,7 @@ document.getElementById("fileInput").addEventListener("change", (e)=>{
 /* ---------- เริ่มต้น ---------- */
 setCanvasSize();
 renderNameList();
-window.addEventListener("resize", setCanvasSize);
+// กัน iOS ซ่อน/โชว์ URL bar กระชาก layout: ใช้ svh แทน vh ไปแล้วด้านบน
 </script>
 </body>
 </html>
